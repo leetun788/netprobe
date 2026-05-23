@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Per-environment — each install has its own config
+config.yaml
+
+# IDE
+.vscode/
+.idea/
+
+# OS junk
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
