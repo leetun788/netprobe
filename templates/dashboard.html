@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>netprobe — {{ state.instance }}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>
     :root {
       --bg: #f5f6f8;
@@ -134,21 +135,37 @@
       border: 1px solid var(--border);
       border-left: 3px solid var(--border);
       padding: 10px 12px; border-radius: 6px;
-      display: flex; flex-direction: column; gap: 4px;
+      display: flex; flex-direction: column; gap: 6px;
     }
     .target.up   { border-left-color: var(--up); }
     .target.down { border-left-color: var(--down); }
-    .target-label { font-weight: 500; }
-    .target-meta {
-      color: var(--text-muted); font-size: 12px;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+    /* top row: label on the left, type badge pinned right */
+    .target-top {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px;
     }
-    .target-meta .type {
+    .target-label { font-weight: 500; }
+    .type {
+      flex-shrink: 0;
       display: inline-block; padding: 1px 6px;
       background: var(--bg); border-radius: 3px;
       font-size: 11px; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.3px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
     }
+
+    /* stats row: latency, loss, optional note — shown when up */
+    .target-stats {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      font-size: 12px; color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    }
+    .stat { white-space: nowrap; }
+    .stat .stat-val { color: var(--text); font-weight: 600; }
+    .stat.note { color: var(--text-dim); font-style: italic; }
+
+    /* error row: replaces the stats row when down */
     .target-error {
       color: var(--down);
       background: var(--down-bg);
@@ -156,15 +173,10 @@
       border-radius: 3px;
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
-      margin-top: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       cursor: help;
-    }
-    .target-error.stub {
-      color: var(--text-dim);
-      background: var(--bg);
     }
 
     footer {
@@ -233,21 +245,27 @@
       <div class="targets">
         {% for t_id, t in cat.targets.items() %}
         <div class="target {{ 'up' if t.up else 'down' }}">
-          <div class="target-label">{{ t.label }}</div>
-          <div class="target-meta">
+          <div class="target-top">
+            <span class="target-label">{{ t.label }}</span>
             <span class="type">{{ t.type }}</span>
-            {% if t.up and t.latency_ms is not none %}
-              {{ "%.1f"|format(t.latency_ms) }} ms
-            {% endif %}
-            {% if t.loss_percent is not none and t.loss_percent > 0 %}
-              · {{ "%.0f"|format(t.loss_percent) }}% loss
-            {% endif %}
           </div>
-          {% if t.error %}
-          <div class="target-error {{ 'stub' if 'stub' in t.error else '' }}"
-               title="{{ t.error }}">
-            {{ t.error }}
-          </div>
+          {% if t.up %}
+            {# Up: show structured metrics. latency for all; loss for ping. #}
+            <div class="target-stats">
+              {% if t.latency_ms is not none %}
+                <span class="stat"><span class="stat-val">{{ "%.0f"|format(t.latency_ms) }}</span> ms</span>
+              {% endif %}
+              {% if t.type == 'ping' and t.loss_percent is not none %}
+                <span class="stat"><span class="stat-val">{{ "%.0f"|format(t.loss_percent) }}%</span> loss</span>
+              {% endif %}
+              {% if t.error %}
+                {# e.g. the Windows "stub (no fping)" note — informational, not a failure #}
+                <span class="stat note" title="{{ t.error }}">{{ t.error }}</span>
+              {% endif %}
+            </div>
+          {% else %}
+            {# Down: error replaces the metrics row entirely. #}
+            <div class="target-error" title="{{ t.error }}">{{ t.error or 'down' }}</div>
           {% endif %}
         </div>
         {% endfor %}

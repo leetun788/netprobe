@@ -7,10 +7,11 @@ listen_port: 8080
 check_interval_seconds: 30
 
 # Per-check timeouts (seconds)
+# http connect is capped at 5s in code; this value is the read budget.
 timeouts:
   ping: 2
   dns: 3
-  http: 5
+  http: 8
 
 wan_info:
   refresh_interval_seconds: 600   # 10 minutes
@@ -47,5 +48,6 @@ categories:
       - {id: http_cloudflare, type: http, label: "cloudflare.com", url: "https://cloudflare.com"}
       - {id: http_google,     type: http, label: "google.com",     url: "https://google.com"}
       - {id: http_youtube,    type: http, label: "youtube.com",    url: "https://youtube.com"}
+      - {id: http_rutracker,  type: http, label: "rutracker.net",  url: "https://rutracker.net"}
       - {id: http_taobao, type: http, label: "taobao.com", url: "https://taobao.com"}
       - {id: http_baidu,  type: http, label: "baidu.com",  url: "https://baidu.com"}
