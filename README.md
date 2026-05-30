@@ -1,6 +1,6 @@
 # netprobe
 
-Stateless network probe for home lab monitoring. Probes targets via ICMP, HTTP, and DNS, exposes results on a small Flask web server.
+Mostly vibecoded network probe. Probes targets via ICMP, HTTP, and DNS. Outputs a HTML page for visual state of a certain gateway, and text formats for grafana / uptimekuma
 
 ## Endpoints
 
