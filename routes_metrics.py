@@ -97,7 +97,7 @@ def metrics():
             "# TYPE netprobe_target_up gauge",
             "# HELP netprobe_target_latency_ms Time the last successful probe took, in milliseconds. Only emitted when the target is up.",
             "# TYPE netprobe_target_latency_ms gauge",
-            "# HELP netprobe_target_loss_percent Packet loss percentage from the last probe burst. Only meaningful for ping targets; emitted whenever a ping was attempted.",
+            "# HELP netprobe_target_loss_percent Percentage of attempts that failed in the last check. For ping, packet loss; for http/dns, the share of retries that failed.",
             "# TYPE netprobe_target_loss_percent gauge",
         ]
         for cat_id, cat in STATE["categories"].items():

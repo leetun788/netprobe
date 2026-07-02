@@ -16,10 +16,11 @@ _wan_info_wake = threading.Event()
 
 def _run_check_pass(config):
     timeouts = config.get("timeouts", {})
+    default_attempts = config.get("attempts")
     work = [(cat_id, t) for cat_id, cat in config["categories"].items()
             for t in cat["targets"]]
     with ThreadPoolExecutor(max_workers=16) as pool:
-        futures = {pool.submit(run_check, t, timeouts): (cat_id, t)
+        futures = {pool.submit(run_check, t, timeouts, default_attempts): (cat_id, t)
                    for cat_id, t in work}
         for fut in as_completed(futures):
             cat_id, target = futures[fut]

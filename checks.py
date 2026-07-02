@@ -105,7 +105,7 @@ def check_ping(target: dict, timeout: float) -> dict:
 
 # ------------------------------ dns --------------------------------------- #
 
-def check_dns(target: dict, timeout: float) -> dict:
+def _dns_once(target: dict, timeout: float) -> dict:
     host = target["host"]
     resolver_ip = target.get("resolver")
     resolver = dns.resolver.Resolver(configure=resolver_ip is None)
@@ -149,7 +149,7 @@ _HTTP_HEADERS = {
 _SESSION = requests.Session()
 
 
-def check_http(target: dict, timeout: float) -> dict:
+def _http_once(target: dict, timeout: float) -> dict:
     """HTTP(S) reachability.
 
     'Up' means the host answered with any non-5xx HTTP response. That
@@ -215,6 +215,70 @@ def check_http(target: dict, timeout: float) -> dict:
                 "loss_percent": None, "error": _short_err(e)}
 
 
+# -------------------------- repeat & aggregate ---------------------------- #
+
+# How many attempts per check cycle for http/dns (ping does its own repeat via
+# fping). Multiple attempts + reporting the % that succeeded turns a transient
+# single-handshake failure into a quality number instead of a false "down".
+_DEFAULT_ATTEMPTS = 3
+# Gap between attempts so they don't fire as one simultaneous burst.
+_ATTEMPT_GAP_S = 0.3
+
+
+def _repeat(once_fn, target: dict, timeout: float, attempts: int) -> dict:
+    """Run a single-attempt check `attempts` times; aggregate to one result.
+
+    - up            : True if at least one attempt succeeded
+    - loss_percent  : percentage of attempts that FAILED (0 = perfect)
+    - latency_ms    : mean latency over the successful attempts
+    - error         : None if any succeeded; else the last attempt's error
+    """
+    if attempts < 1:
+        attempts = 1
+    successes = []          # latency_ms of each successful attempt
+    last_error = None
+    for i in range(attempts):
+        res = once_fn(target, timeout)
+        if res.get("up"):
+            successes.append(res.get("latency_ms"))
+        else:
+            last_error = res.get("error")
+        if i < attempts - 1:
+            time.sleep(_ATTEMPT_GAP_S)
+
+    ok = len(successes)
+    loss_pct = ((attempts - ok) / attempts) * 100
+    valid_lat = [l for l in successes if l is not None]
+    avg_lat = (sum(valid_lat) / len(valid_lat)) if valid_lat else None
+
+    if ok > 0:
+        # Partial failure is still "up", but surface the last error so a
+        # degraded target shows why it's dropping.
+        err = None if ok == attempts else f"{attempts - ok}/{attempts} failed: {last_error}"
+        return {"up": True, "latency_ms": avg_lat,
+                "loss_percent": loss_pct, "error": err}
+    return {"up": False, "latency_ms": None,
+            "loss_percent": 100.0, "error": last_error}
+
+
+def _attempts_for(target: dict, default: int = None) -> int:
+    """Per-target `attempts:` overrides the global default, which overrides
+    the built-in _DEFAULT_ATTEMPTS."""
+    val = target.get("attempts", default if default is not None else _DEFAULT_ATTEMPTS)
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return _DEFAULT_ATTEMPTS
+
+
+def check_http(target: dict, timeout: float, default_attempts: int = None) -> dict:
+    return _repeat(_http_once, target, timeout, _attempts_for(target, default_attempts))
+
+
+def check_dns(target: dict, timeout: float, default_attempts: int = None) -> dict:
+    return _repeat(_dns_once, target, timeout, _attempts_for(target, default_attempts))
+
+
 # ----------------------------- registry ----------------------------------- #
 
 CHECK_FUNCS = {
@@ -224,10 +288,12 @@ CHECK_FUNCS = {
 }
 
 
-def run_check(target: dict, timeouts: dict) -> dict:
+def run_check(target: dict, timeouts: dict, default_attempts: int = None) -> dict:
     fn = CHECK_FUNCS.get(target["type"])
     if fn is None:
         return {"up": False, "latency_ms": None, "loss_percent": None,
                 "error": f"unknown check type: {target['type']}"}
     timeout = timeouts.get(target["type"], 5)
-    return fn(target, timeout)
+    if fn is check_ping:
+        return fn(target, timeout)
+    return fn(target, timeout, default_attempts)

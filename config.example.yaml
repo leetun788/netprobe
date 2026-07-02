@@ -13,6 +13,12 @@ timeouts:
   dns: 3
   http: 8
 
+# Attempts per cycle for http/dns checks. loss_percent reports the share that
+# failed, so a flaky target shows as e.g. 33% loss instead of flapping to down.
+# Override per-target with `attempts:` on the target. ping ignores this (fping
+# sends its own burst).
+attempts: 3
+
 wan_info:
   refresh_interval_seconds: 600   # 10 minutes
   items:

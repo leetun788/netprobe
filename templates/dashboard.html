@@ -250,16 +250,15 @@
             <span class="type">{{ t.type }}</span>
           </div>
           {% if t.up %}
-            {# Up: show structured metrics. latency for all; loss for ping. #}
+            {# Up: show structured metrics. latency for all; loss for any check that reports it. #}
             <div class="target-stats">
               {% if t.latency_ms is not none %}
                 <span class="stat"><span class="stat-val">{{ "%.0f"|format(t.latency_ms) }}</span> ms</span>
               {% endif %}
-              {% if t.type == 'ping' and t.loss_percent is not none %}
+              {% if t.loss_percent is not none and t.loss_percent > 0 %}
                 <span class="stat"><span class="stat-val">{{ "%.0f"|format(t.loss_percent) }}%</span> loss</span>
               {% endif %}
               {% if t.error %}
-                {# e.g. the Windows "stub (no fping)" note — informational, not a failure #}
                 <span class="stat note" title="{{ t.error }}">{{ t.error }}</span>
               {% endif %}
             </div>
