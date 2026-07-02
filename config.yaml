@@ -1,0 +1,57 @@
+# netprobe config — universal across all probes.
+# The ONLY line to change per box is `instance:`. Everything else is identical
+# so every probe emits the same target set / structure to Grafana.
+
+instance: wanX
+listen_host: 0.0.0.0
+listen_port: 8080
+check_interval_seconds: 30
+
+# Per-check timeouts (seconds). http connect is capped at 5s in code; this is
+# the read budget.
+timeouts:
+  ping: 2
+  dns: 3
+  http: 8
+
+# Attempts per cycle for http/dns. loss_percent reports the failed share, so a
+# flaky target reads e.g. 33% loss instead of flapping down. Per-target override
+# with `attempts:`. ping ignores this (fping sends its own burst).
+attempts: 3
+
+wan_info:
+  refresh_interval_seconds: 600
+  items:
+    - id: local_gateway
+      type: gateway
+      hop: 2
+    - id: exit_ip
+      type: exit_ip
+      urls:
+        - "https://realip.cc/simple"
+        - "https://api.ipify.org"
+    - id: exit_geo
+      type: exit_geo
+      depends_on: exit_ip
+      urls:
+        - "https://realip.cc/?ip={ip}"
+        - "https://ipinfo.io/{ip}/json"
+
+categories:
+  ping:
+    label: "Ping (L3 reachability)"
+    targets:
+      - {id: ping_google_dns,  type: ping, label: "Google DNS",     host: 8.8.8.8}
+      - {id: ping_cloudflare,  type: ping, label: "Cloudflare DNS", host: 1.1.1.1}
+      - {id: ping_alibaba_dns, type: ping, label: "Alibaba DNS",    host: 223.5.5.5}
+      - {id: ping_dnspod,      type: ping, label: "DNSPod",         host: 119.29.29.29}
+
+  web:
+    label: "Web"
+    targets:
+      - {id: http_cloudflare, type: http, label: "cloudflare.com", url: "https://cloudflare.com"}
+      - {id: http_google,     type: http, label: "google.com",     url: "https://google.com"}
+      - {id: http_youtube,    type: http, label: "youtube.com",    url: "https://youtube.com"}
+      - {id: http_rutracker,  type: http, label: "rutracker.net",  url: "https://rutracker.net"}
+      - {id: http_taobao,     type: http, label: "taobao.com",     url: "https://taobao.com"}
+      - {id: http_baidu,      type: http, label: "baidu.com",      url: "https://baidu.com"}

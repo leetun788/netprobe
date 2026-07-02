@@ -6,8 +6,6 @@ __pycache__/
 *.pyd
 .pytest_cache/
 
-# Per-environment — each install has its own config
-config.yaml
 
 # IDE
 .vscode/
