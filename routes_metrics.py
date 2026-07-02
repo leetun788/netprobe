@@ -9,6 +9,7 @@ separator banners group related series.
 from flask import Blueprint, Response
 
 from state import LOCK, STATE
+from version import __version__
 
 bp = Blueprint("metrics", __name__)
 
@@ -28,6 +29,14 @@ def metrics():
     lines = []
     with LOCK:
         instance = STATE["instance"]
+
+        # netprobe_build_info: version stamp per probe (Prometheus info pattern —
+        # value is always 1, the useful data is in the version label).
+        lines += [
+            "# HELP netprobe_build_info netprobe version running on this probe.",
+            "# TYPE netprobe_build_info gauge",
+            f'netprobe_build_info{{instance="{_esc(instance)}",version="{_esc(__version__)}"}} 1',
+        ]
 
         # =========================================================== #
         # WAN INFO — slow-changing facts about this probe's WAN egress

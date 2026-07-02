@@ -7,6 +7,7 @@ wire up — the SVG lives right here as a string.
 from flask import Blueprint, Response, render_template
 
 from state import LOCK, STATE
+from version import __version__
 
 bp = Blueprint("html", __name__)
 
@@ -48,7 +49,7 @@ def dashboard():
             "categories": STATE["categories"],
             "config_loaded_at": STATE["config_loaded_at"],
         }
-    return render_template("dashboard.html", state=snapshot)
+    return render_template("dashboard.html", state=snapshot, version=__version__)
 
 
 @bp.route("/favicon.svg")

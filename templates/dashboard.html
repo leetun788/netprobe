@@ -45,6 +45,7 @@
     }
     .title-block h1 { margin: 0; font-size: 22px; font-weight: 600; }
     .instance { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+    .version { opacity: 0.6; margin-left: 6px; font-variant-numeric: tabular-nums; }
 
     nav.endpoints { display: flex; gap: 4px; flex-wrap: wrap; }
     nav.endpoints a {
@@ -195,7 +196,7 @@
     <header>
       <div class="title-block">
         <h1>netprobe</h1>
-        <div class="instance">instance: <strong>{{ state.instance }}</strong></div>
+        <div class="instance">instance: <strong>{{ state.instance }}</strong> <span class="version">v{{ version }}</span></div>
       </div>
       <nav class="endpoints">
         <a href="/metrics" title="Prometheus / Grafana scrape">
